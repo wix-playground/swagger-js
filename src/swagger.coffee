@@ -507,6 +507,11 @@ class SwaggerOperation
 
     @responseMessages = @responseMessages || []
 
+    for response in @responseMessages
+      if !!response.responseModel
+        response.signature = @getSignature(response.responseModel, @resource.models)
+        response.sampleJSON = @getSampleJSON(response.responseModel, @resource.models)
+
     for parameter in @parameters
       # Path params do not have a name, set the name to the path if name is n/a
       parameter.name = parameter.name || parameter.type || parameter.dataType
