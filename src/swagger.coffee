@@ -191,7 +191,8 @@ class SwaggerResource
     produces = []
     consumes = []
 
-    @path = if @api.resourcePath? then @api.resourcePath else resourceObj.path
+    @path = if @api.resourcePath? then @api.resourcePath else resourceObj.path || resourceObj.name
+
 
     @description = resourceObj.description
 
@@ -213,7 +214,7 @@ class SwaggerResource
     @models = {}
     @rawModels = {}
 
-    if resourceObj.apis? and @api.resourcePath?
+    if resourceObj.apis? and (@api.resourcePath? or resourceObj.name?)
       # read resource directly from operations object
       @addApiDeclaration(resourceObj)
 
@@ -489,14 +490,17 @@ class SwaggerModelProperty
 class SwaggerOperation
   constructor: (@nickname, @path, @method, @parameters=[], @summary, @notes, @type, @responseMessages, @resource, @consumes, @produces, @authorizations) ->
     @resource.api.fail "SwaggerOperations must have a nickname." unless @nickname?
-    @resource.api.fail "SwaggerOperation #{nickname} is missing path." unless @path?
     @resource.api.fail "SwaggerOperation #{nickname} is missing method." unless @method?
 
     # Convert {format} to 'json'
-    @path = @path.replace('{format}', 'json')
+    if @path?
+      @path = @path.replace('{format}', 'json')
+    else
+      @path = ""
     @method = @method.toLowerCase()
     @isGetMethod = @method == "get"
     @resourceName = @resource.name
+    @isHook = @method == "hook"
 
     # if void clear it
     if(@type?.toLowerCase() is 'void') then @type = undefined
@@ -515,7 +519,7 @@ class SwaggerOperation
     for parameter in @parameters
       # Path params do not have a name, set the name to the path if name is n/a
       parameter.name = parameter.name || parameter.type || parameter.dataType
-
+      parameter.isHeader = parameter.type == 'header';
       type = parameter.type || parameter.dataType
 
       if(type.toLowerCase() is 'boolean')
